@@ -1,9 +1,7 @@
-import os
-import re
 from tkinter import *
-from pdb import *
 
 #### Article preparaion
+import os
 articleName = None
 for fileName in os.listdir():
     if fileName.find('.') != -1 and fileName.split('.')[1] == 'txt':
@@ -28,25 +26,31 @@ rightFore = select_theme['rightFore']
 rightBack = select_theme['rightBack']
 ####
 
-#### Window Init
-window = Tk()
-text = Text(window, wrap=WORD, font=fontName+' '+fontSize)
-text.insert(INSERT, article[0])
-text.pack()
 
+### TagControl
+def TagControl(position):
+    global text
+    text.tag_add('left', '1.0','1.{}'.format(position))
+    text.tag_config('left', foreground=leftFore, background=leftBack)
+    text.tag_add('middle', '1.{}'.format(position), '1.{}'.format(position+1))
+    text.tag_config('middle', foreground=middleFore, background=middleBack, underline=True)
+    text.tag_add('right', '1.{}'.format(position+1), END)
+    text.tag_config('right', foreground=rightFore, background=rightBack)
 ####
 
-#### Tag Init
-def TagInit():
-    text.tag_add('left', '1.0', '1.0')
-    text.tag_add('middle', '1.0', '1.1')
-    text.tag_config('middle', foreground=middleFore,
-                    background=middleBack)
-    text.tag_add('right', '1.2', END)
-    text.tag_config('right', foreground=rightFore,
-                    background=rightBack)
-    text.config(state=DISABLED)
-TagInit()
+#### Window Init
+window = Tk()
+text = Text(window, wrap=WORD, font=fontName+' '+fontSize,
+            spacing2=int(fontSize), width=50)
+text.insert(INSERT, article[0])
+text.pack()
+TagControl(0)
+####
+
+
+#### Counter Init
+import time
+timestampA = time.time()
 ####
 
 #### Key listen
@@ -54,8 +58,12 @@ def Keylistener(event):
     global x_pointer
     global paragraph_pointer
     global x_length
+    global counter_limit
+    global counter_pointer
+    global timestampA
     if(event.char != article[paragraph_pointer][x_pointer]):
         return
+    window.title(str(int(x_pointer/(time.time() - timestampA)*60)))
     text.config(state=NORMAL)
     text.tag_delete('left')
     text.tag_delete('middle')
@@ -64,23 +72,23 @@ def Keylistener(event):
     if x_pointer == x_length:
         text.delete('1.0',END)
         paragraph_pointer += 1
-        if(paragraph_pointer == paragraph_limit - 1):
+        if(paragraph_pointer >= paragraph_limit):
             exit(0)
         text.insert(INSERT, article[paragraph_pointer])
         x_length = len(article[paragraph_pointer])
         x_pointer = 0
-        TagInit()
+        TagControl(0)
         return
-    text.tag_add('left', '1.0','1.{}'.format(x_pointer))
-    text.tag_config('left', foreground=leftFore, background=leftBack)
-    text.tag_add('middle', '1.{}'.format(x_pointer), '1.{}'.format(x_pointer+1))
-    text.tag_config('middle', foreground=middleFore, background=middleBack)
-    text.tag_add('right', '1.{}'.format(x_pointer+1), END)
-    text.tag_config('right', foreground=rightFore, background=rightBack)
+    TagControl(x_pointer)
     text.config(state=DISABLED)
-window.bind('<Key>', Keylistener)
 
 def nullfunc(event):
     pass
+####
+
+#### Bind
+window.bind('<Key>', Keylistener)
 window.bind('<Shift_L>', nullfunc)
+####
+
 mainloop()
